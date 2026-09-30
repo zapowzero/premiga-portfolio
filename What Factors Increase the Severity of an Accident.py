@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-df = pd.read_csv(r'C:\Users\TUF GAMING\OneDrive\Desktop\zapow dataviz\US_Accidents_March23.csv')
+df = pd.read_csv(r'C:\Users\TUF GAMING\OneDrive\Desktop\datasets\US_Accidents_March23.csv')
 
 df['Start_Time'] = pd.to_datetime(df['Start_Time'], errors='coerce')
 df.dropna(subset=['Start_Time'], inplace=True)
