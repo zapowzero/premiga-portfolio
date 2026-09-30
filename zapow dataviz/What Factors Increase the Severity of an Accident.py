@@ -1,78 +1,89 @@
-import pandas as pd
+"""
+Which road features are linked to high-impact accidents?
+Compares road-feature shares for high-impact (Severity 3-4) vs low-impact (Severity 1-2)
+accidents in the US Accidents dataset (March 2023).
+
+Note: in this dataset, Severity measures impact on traffic (length of delay),
+not injury severity.
+
+Dataset: https://www.kaggle.com/datasets/sobhanmoosavi/us-accidents
+Put US_Accidents_March23.csv in the data/ folder, or pass its path when running:
+    python "<this script>.py" "path/to/US_Accidents_March23.csv"
+"""
+import sys
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
-df = pd.read_csv(r'C:\Users\TUF GAMING\OneDrive\Desktop\datasets\US_Accidents_March23.csv')
+CSV_NAME = "US_Accidents_March23.csv"
+HERE = Path(__file__).resolve().parent
+# Places to look for the CSV, in order (first match wins)
+CANDIDATES = [
+    HERE / "data" / CSV_NAME,             # zapow dataviz/data/
+    HERE.parent.parent / "datasets" / CSV_NAME,  # Desktop/datasets/ (next to "projects portfolio")
+]
+if len(sys.argv) > 1:
+    CANDIDATES.insert(0, Path(sys.argv[1]))
+DATA_PATH = next((p for p in CANDIDATES if p.exists()), None)
+if DATA_PATH is None:
+    sys.exit("CSV not found. Looked in:\n  " + "\n  ".join(str(p) for p in CANDIDATES) +
+             "\nPut the CSV in one of these places, or pass its path: python script.py path/to/" + CSV_NAME)
+print(f"Using data: {DATA_PATH}")
+OUTPUT_PATH = HERE / "comparison of severe vs minor accidents by road feature.png"
 
-df['Start_Time'] = pd.to_datetime(df['Start_Time'], errors='coerce')
-df.dropna(subset=['Start_Time'], inplace=True)
-
-road_features = ['Amenity', 'Bump', 'Crossing', 'Give_Way', 'Junction', 'No_Exit', 
-                 'Railway', 'Roundabout', 'Station', 'Stop', 'Traffic_Calming', 
+ROAD_FEATURES = ['Amenity', 'Bump', 'Crossing', 'Give_Way', 'Junction', 'No_Exit',
+                 'Railway', 'Roundabout', 'Station', 'Stop', 'Traffic_Calming',
                  'Traffic_Signal', 'Turning_Loop']
 
+df = pd.read_csv(DATA_PATH, usecols=['Severity'] + ROAD_FEATURES)
 
-severe_accidents = df[df['Severity'].isin([3, 4])]
-minor_accidents = df[df['Severity'].isin([1, 2])]
+severe = df[df['Severity'].isin([3, 4])]
+minor = df[df['Severity'].isin([1, 2])]
+print(f"High-impact accidents (3-4): {len(severe):,}")
+print(f"Low-impact accidents (1-2):  {len(minor):,}")
 
-severe_counts = severe_accidents[road_features].sum()
-minor_counts = minor_accidents[road_features].sum()
+severe_counts = severe[ROAD_FEATURES].sum()
+minor_counts = minor[ROAD_FEATURES].sum()
 
-severe_percent = (severe_counts / severe_counts.sum()) * 100
-minor_percent = (minor_counts / minor_counts.sum()) * 100
+comparison = pd.DataFrame({
+    'Severe Accidents (%)': severe_counts / severe_counts.sum() * 100,
+    'Minor Accidents (%)': minor_counts / minor_counts.sum() * 100,
+})
+# Positive = feature is over-represented among high-impact accidents
+comparison['Difference (pp)'] = comparison['Severe Accidents (%)'] - comparison['Minor Accidents (%)']
+comparison = comparison.sort_values('Severe Accidents (%)', ascending=True)
 
-comparison_df = pd.DataFrame({
-    'Road Feature': road_features,
-    'Severe Accidents (%)': severe_percent.values,
-    'Minor Accidents (%)': minor_percent.values
-}).set_index('Road Feature')
-
-comparison_df = comparison_df.sort_values('Severe Accidents (%)', ascending=True)
-
-plt.figure(figsize=(16, 10))
-
-bar_width = 0.35
-index = np.arange(len(comparison_df))
+# Chart
 fig, ax = plt.subplots(figsize=(16, 10))
+bar_width = 0.35
+index = np.arange(len(comparison))
 
+bars_severe = ax.barh(index - bar_width / 2, comparison['Severe Accidents (%)'],
+                      height=bar_width, color='#8B0000', alpha=0.8,
+                      label='High impact (Severity 3-4)')
+bars_minor = ax.barh(index + bar_width / 2, comparison['Minor Accidents (%)'],
+                     height=bar_width, color='#000066', alpha=0.8,
+                     label='Low impact (Severity 1-2)')
 
-severe_color = '#8B0000'  # Dark Red 
-minor_color = '#000066'   # Royal Blue 
-
-
-bar1 = ax.barh(index - bar_width/2, comparison_df['Severe Accidents (%)'], 
-               height=bar_width, color=severe_color, label='Severe Accidents (3-4)', 
-               alpha=0.8)
-bar2 = ax.barh(index + bar_width/2, comparison_df['Minor Accidents (%)'], 
-               height=bar_width, color=minor_color, label='Minor Accidents (1-2)', 
-               alpha=0.8)
-
-
-for bar in bar1:
+for bar in list(bars_severe) + list(bars_minor):
     width = bar.get_width()
-    ax.text(width + 0.3, bar.get_y() + bar.get_height()/2,
-            f'{width:.1f}%',
+    ax.text(width + 0.3, bar.get_y() + bar.get_height() / 2, f'{width:.1f}%',
             ha='left', va='center', fontweight='bold')
-
-for bar in bar2:
-    width = bar.get_width()
-    ax.text(width + 0.3, bar.get_y() + bar.get_height()/2,
-            f'{width:.1f}%',
-            ha='left', va='center', fontweight='bold')
-
 
 ax.set_yticks(index)
-ax.set_yticklabels(comparison_df.index)
-ax.set_xlabel("Percentage of Accidents", fontsize=12, fontweight='bold')
+ax.set_yticklabels(comparison.index)
+ax.set_xlabel("Share of road-feature flags (%)", fontsize=12, fontweight='bold')
 ax.set_ylabel("Road Feature", fontsize=12, fontweight='bold')
-ax.set_title("Comparison of Severe vs. Minor Accidents by Road Feature (%)", 
+ax.set_title("Comparison of Severe vs. Minor Accidents by Road Feature (%)",
              fontsize=14, fontweight='bold')
 ax.legend(title='Accident Severity', loc='lower right')
-ax.set_xlim(0, max(comparison_df.max()) + 5) 
+ax.set_xlim(0, comparison[['Severe Accidents (%)', 'Minor Accidents (%)']].max().max() + 5)
 ax.grid(axis='x', linestyle='--', alpha=0.7)
-
-plt.tight_layout()
+fig.tight_layout()
+fig.savefig(OUTPUT_PATH, dpi=150)
 plt.show()
 
-print("\nRoad Feature Severity Comparison:")
-print(comparison_df)
+print("\nRoad Feature Severity Comparison (sorted by difference):")
+print(comparison.sort_values('Difference (pp)', ascending=False).round(1))
