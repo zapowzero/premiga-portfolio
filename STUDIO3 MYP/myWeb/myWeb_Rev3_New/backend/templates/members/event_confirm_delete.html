@@ -1,0 +1,16 @@
+{% extends 'members/base.html' %}
+{% block content %}
+<h2>Confirm Delete Event</h2>
+<p>Are you sure you want to delete {{ event.name }}?</p>
+<form method="post" style="display:flex;gap:16px;align-items:center;">
+    {% csrf_token %}
+    
+    <button type="submit" class="btn btn-primary">
+        Confirm
+    </button>
+    
+    <a href="{{ request.META.HTTP_REFERER|default:'/members/' }}" class="btn btn-danger">
+        Cancel
+    </a>
+</form>
+{% endblock %}

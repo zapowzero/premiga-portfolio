@@ -1,0 +1,28 @@
+[
+    {
+        "from_id": "5001",
+        "from_name": "Tom Worker",
+        "to_id": "1002",
+        "to_name": "Amon Hackl",
+        "cc_id": "5001",
+        "cc_name": "Tom Worker",
+        "header": "TEST",
+        "detail": "TEST",
+        "attachment": "C:/Users/amonk/Downloads/476906973_904569538420237_6813546277476915305_n.jpg",
+        "status": "Approved",
+        "date_sent": "2025-03-24 12:02:03"
+    },
+    {
+        "from_id": "1002",
+        "from_name": "Amon Hackl",
+        "to_id": "1001",
+        "to_name": "John Support",
+        "cc_id": "1002",
+        "cc_name": "Amon Hackl",
+        "header": "A",
+        "detail": "tesr",
+        "attachment": "C:/Users/amonk/Downloads/CMS_Group4_MYP.pdf",
+        "status": "Pending",
+        "date_sent": "2025-03-24 14:40:52"
+    }
+]

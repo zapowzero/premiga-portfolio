@@ -1,0 +1,192 @@
+{% extends 'members/base.html' %}
+
+{% block content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f7f9fc, #edf3ff);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    }
+
+
+    .member-container {
+        max-width: 1350px; 
+        margin: 40px auto;
+        padding: 35px; 
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .list-header {
+        border-bottom: 2px solid #e0e6f0;
+        padding-bottom: 20px; 
+        margin-bottom: 30px; 
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .list-header h2 {
+        margin: 0;
+        color: #0d1b5e;
+        font-size: 2.2em;
+        font-weight: 700;
+    }
+
+    .stat-tag {
+        background: #0f3460;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 0.9em;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .btn-outline {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.9em;
+        font-weight: 600;
+        text-decoration: none;
+        background: transparent;
+        border: 2px solid transparent;
+        transition: 0.15s ease;
+        margin-right: 6px;
+        line-height: 1;
+    }
+
+    .edit-btn {
+        color: #0f3460;
+        border-color: #0f3460;
+    }
+    .edit-btn:hover, .edit-btn:focus {
+        background: #0f3460; 
+        color: white;
+        border-color: #0f3460;
+        transform: translateY(0);
+    }
+
+    .delete-btn {
+        color: #d93025;
+        border-color: #d93025;
+    }
+    .delete-btn:hover, .delete-btn:focus {
+        background: #d93025; 
+        color: white;
+        border-color: #d93025;
+        transform: translateY(0);
+    }
+
+    .table-wrapper {
+        overflow-x: auto; 
+    }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    .styled-table thead {
+        background: #004aad;
+        color: #fff;
+    }
+
+    .styled-table th, .styled-table td {
+        padding: 12px 15px; 
+        border-bottom: 1px solid #eaeaea;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .styled-table tbody tr:hover {
+        background: #eef3ff;
+    }
+
+    .avatar {
+        width:40px;
+        height:40px;
+        border-radius:50%;
+        object-fit:cover;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+</style>
+
+<div class="member-container">
+    <div class="list-header">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <h2>Member List</h2>
+            <span class="stat-tag">Total {{ members|length }}</span>
+        </div>
+
+        {% if user.is_authenticated %}
+        <div class="header-actions">
+            <a href="{% url 'member_add' %}" class="button primary-action">Add New Player</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="table-wrapper">
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Gender</th>
+                    <th>Date of Birth</th>
+                    <th>Country</th>
+                    <th>Classification</th>
+                    <th>Email</th>
+                    <th>Profile Image</th>
+                    {% if user.is_authenticated %}<th style="width: 140px;">Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in members %}
+                <tr>
+                    <td>{{ member.bid }}</td>
+                    <td>{{ member.firstName }}</td>
+                    <td>{{ member.lastName }}</td>
+                    <td>{{ member.gender }}</td>
+                    <td>{{ member.dateOfBirth|date:'M d, Y' }}</td>
+                    <td>{{ member.country }}</td>
+                    <td>{{ member.classification }}</td>
+                    <td>{{ member.email|default:'None' }}</td>
+                    <td>
+                        <img class="avatar"
+                             src="https://ui-avatars.com/api/?name={{ member.firstName }}+{{ member.lastName }}&background=004aad&color=fff&size=40"
+                             alt="Profile" />
+                    </td>
+                    {% if user.is_authenticated %}
+                    <td style="white-space: nowrap;">
+                        <a href="{% url 'member_edit' member.pk %}" class="btn-outline edit-btn">Edit</a>
+                        <a href="{% url 'member_delete' member.pk %}" class="btn-outline delete-btn">Delete</a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

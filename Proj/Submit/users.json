@@ -1,0 +1,62 @@
+{
+    "support@myp.com": {
+        "profile_picture": "\ud83d\udc36",
+        "position": "Support",
+        "employee_id": "1001",
+        "first_name": "John",
+        "last_name": "Support",
+        "birth_date": "01/01/1990",
+        "email": "support@myp.com",
+        "password": "Support123"
+    },
+    "board@myp.com": {
+        "profile_picture": "\ud83d\udc36",
+        "position": "Board",
+        "employee_id": "2001",
+        "first_name": "Jane",
+        "last_name": "Board",
+        "birth_date": "02/02/1985",
+        "email": "board@myp.com",
+        "password": "Board123"
+    },
+    "hr@myp.com": {
+        "profile_picture": "\ud83d\udc36",
+        "position": "Human Resources",
+        "employee_id": "3001",
+        "first_name": "Mike",
+        "last_name": "HR",
+        "birth_date": "03/03/1988",
+        "email": "hr@myp.com",
+        "password": "HResources123"
+    },
+    "manager@myp.com": {
+        "profile_picture": "\ud83d\udc36",
+        "position": "Manager",
+        "employee_id": "4001",
+        "first_name": "Sarah",
+        "last_name": "Manager",
+        "birth_date": "04/04/1982",
+        "email": "manager@myp.com",
+        "password": "Manager123"
+    },
+    "worker@myp.com": {
+        "profile_picture": "\ud83d\ude19",
+        "position": "Worker",
+        "employee_id": "5001",
+        "first_name": "Tom",
+        "last_name": "Worker",
+        "birth_date": "05/05/1991",
+        "email": "worker@myp.com",
+        "password": "Worker123"
+    },
+    "mon@myp.com": {
+        "profile_picture": "\ud83d\ude43",
+        "position": "Support",
+        "employee_id": "1002",
+        "first_name": "Amon",
+        "last_name": "Hackl",
+        "birthday": "1998-12-21",
+        "email": "mon@myp.com",
+        "password": "App15415"
+    }
+}

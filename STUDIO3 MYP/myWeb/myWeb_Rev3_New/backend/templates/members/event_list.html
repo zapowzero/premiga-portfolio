@@ -1,0 +1,61 @@
+{% extends 'members/base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>Events</h2>
+    {% if user.is_authenticated %}
+        <a href="{% url 'event_add' %}" class="add-member-btn">Add Event</a>
+    {% endif %}
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Date</th>
+            <th>Location</th>
+            <th>Players</th>
+            <th>Description</th>
+            <th>Actions</th> <!-- รวม Actions ทั้งหมดไว้ในคอลัมน์เดียว -->
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in events %}
+        <tr>
+            <td>{{ event.name }}</td> {# แสดงชื่อ Event เป็นข้อความธรรมดา #}
+            <td>{{ event.date }}</td>
+            <td>{{ event.location }}</td>
+            <td>
+                {% with players=event.players.all %}
+                    {% if players|length == 0 %}
+                        -
+                    {% elif players|length == 1 %}
+                        {{ players.0.firstName }} {{ players.0.lastName }}
+                    {% elif players|length == 2 %}
+                        {{ players.0.firstName }} {{ players.0.lastName }}
+                        <strong>Vs</strong>
+                        {{ players.1.firstName }} {{ players.1.lastName }}
+                    {% else %}
+                        {{ players|length }} players
+                    {% endif %}
+                {% endwith %}
+            </td>
+            <td>{{ event.description }}</td>
+            <td>
+                <div class="action-links">
+                    {# ปุ่มสำหรับดูรายละเอียด event #}
+                    <a href="{% url 'event_detail' event.pk %}">Details</a>
+
+                    {# ปุ่มสำหรับ Edit และ Delete (จะแสดงเมื่อ login) #}
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'event_edit' event.pk %}">Edit</a>
+                        <a href="{% url 'event_delete' event.pk %}" class="delete-link">Delete</a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'members/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-text">
+        <h1>Welcome to the Paralympic World</h1>
+        <p>
+            Empower. Inspire. Achieve. Discover the inspiring world of Paralympic athletes who break
+            barriers and redefine what's possible.
+        </p>
+    </div>
+    <div class="hero-image">
+        <img src="{% static 'images/athlete4.webp' %}"
+             alt="Paralympic Athletes Running"
+             onerror="this.onerror=null;this.src='{% static 'images/placeholder-800x400.jpg' %}';">
+    </div>
+</section>
+
+<!-- Image Grid -->
+<section class="image-grid">
+    <div class="grid-item">
+        <img src="{% static 'images/athlete1.jpg' %}"
+             alt="Wheelchair Racing"
+             onerror="this.onerror=null;this.src='{% static 'images/placeholder-700x400.jpg' %}';">
+    </div>
+    <div class="grid-item">
+        <img src="{% static 'images/athlete2.webp' %}"
+             alt="Running Athlete"
+             onerror="this.onerror=null;this.src='{% static 'images/placeholder-700x400.jpg' %}';">
+    </div>
+    <div class="grid-item">
+        <img src="{% static 'images/athlete3.jpg' %}"
+             alt="Archery"
+             onerror="this.onerror=null;this.src='{% static 'images/placeholder-700x400.jpg' %}';">
+    </div>
+    <div class="grid-item">
+        <img src="{% static 'images/hero-image.jpg' %}"
+             alt="Cycling"
+             onerror="this.onerror=null;this.src='{% static 'images/placeholder-700x400.jpg' %}';">
+    </div>
+</section>
+
+
+{% endblock %}

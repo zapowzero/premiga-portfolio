@@ -1,0 +1,157 @@
+{% extends 'members/base.html' %}
+{% block content %}
+<div style="max-width:100%;margin:0;padding:0;background:#f8f9fa;min-height:100vh;">
+    <div style="max-width:1200px;margin:0 auto;padding:20px;">
+        <h2 style="color:#1a1a2e;margin-bottom:30px;font-size:32px;font-weight:700;background:linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Search Members</h2>
+        
+        <!-- Search Form -->
+        <div style="background:#fff;padding:40px 0px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,0.08);
+            margin-bottom:30px;border:1px solid rgba(0,0,0,0.05);position:relative;overflow:hidden;max-width:100%;width:100%;display:flex;justify-content:center;">
+            <div style="width:100%;max-width:600px;">
+                <form method="get" action="{% url 'member_search' %}"
+                    style="display:flex;gap:8px;align-items:center;width:100%;">
+                    <input type="text" 
+                        name="q" 
+                        value="{{ query }}" 
+                        placeholder="Search members..." 
+                        style="flex:2;padding:16px 20px;border:2px solid #e5e5e5;border-radius:12px;font-size:15px;transition:all 0.3s;background:#fafafa;min-width:180px;"
+                        onfocus="this.style.borderColor='#0f3460';this.style.background='#fff';this.style.boxShadow='0 0 0 4px rgba(15,52,96,0.1)'"
+                        onblur="this.style.borderColor='#e5e5e5';this.style.background='#fafafa';this.style.boxShadow='none'">
+                    <select name="type" 
+                        style="flex:1;padding:16px 12px;border:2px solid #e5e5e5;border-radius:12px;font-size:15px;background:#fafafa;cursor:pointer;transition:all 0.3s;min-width:80px;"
+                        onfocus="this.style.borderColor='#0f3460';this.style.background='#fff';this.style.boxShadow='0 0 0 4px rgba(15,52,96,0.1)'"
+                        onblur="this.style.borderColor='#e5e5e5';this.style.background='#fafafa';this.style.boxShadow='none'">
+                        <option value="name" {% if search_type == 'name' %}selected{% endif %}>Name</option>
+                        <option value="id" {% if search_type == 'id' %}selected{% endif %}>ID</option>
+                        <option value="country" {% if search_type == 'country' %}selected{% endif %}>Country</option>
+                        <option value="classification" {% if search_type == 'classification' %}selected{% endif %}>Classification</option>
+                        <option value="gender" {% if search_type == 'gender' %}selected{% endif %}>Gender</option>
+                    </select>
+                    <button type="submit" 
+                        style="padding:16px 32px;background:linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 20px rgba(15,52,96,0.4);white-space:nowrap;min-width:100px;"
+                        onmouseover="this.style.transform='translateY(-4.7px)';this.style.boxShadow='0 8px 30px rgba(15,52,96,0.5)'"
+                        onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(15,52,96,0.4)'">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div style="margin-bottom:20px;">
+            <h3 style="color:#1a1a2e;font-size:24px;font-weight:600;display:flex;align-items:center;gap:10px;">
+                <span style="display:inline-block;width:4px;height:24px;background:linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+                    border-radius:2px;"></span>
+                Results
+                {% if results %}
+                    <span style="background:linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+                        color:#fff;padding:4px 12px;border-radius:15px;font-size:14px;font-weight:500;
+                        box-shadow:0 2px 8px rgba(15,52,96,0.3);">{{ results|length }}</span>
+                {% endif %}
+            </h3>
+        </div>
+
+        <!-- Cards Grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;">
+            {% for member in results %}
+            <div style="background:#fff;border-radius:15px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.08);
+                        transition:all 0.3s;cursor:pointer;"
+                 onmouseover="this.style.transform='translateY(-5px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.15)'"
+                 onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'">
+
+                <!-- Header with gradient -->
+                <div style="background:linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);padding:20px;text-align:center;position:relative;overflow:hidden;">
+                    {% if member.imgProfile %}
+                        <img src="{{ member.imgProfile }}" 
+                             alt="Profile" 
+                             style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:4px solid #fff;
+                             box-shadow:0 4px 15px rgba(0,0,0,0.3);position:relative;z-index:1;" />
+                    {% else %}
+                        <div style="width:80px;height:80px;background:#fff;border-radius:50%;margin:0 auto;
+                            display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;
+                            color:#0f3460;box-shadow:0 4px 15px rgba(0,0,0,0.3);position:relative;z-index:1;">
+                            {{ member.firstName|first }}{{ member.lastName|first }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Content -->
+                <div style="padding:20px;">
+                    <h4 style="color:#1a1a2e;font-size:18px;font-weight:600;margin:0 0 15px 0;text-align:center;">
+                        {{ member.firstName }} {{ member.lastName }}
+                    </h4>
+                    
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fafafa;
+                            border-radius:8px;transition:all 0.3s;" 
+                            onmouseover="this.style.background='#f0f0f0'" 
+                            onmouseout="this.style.background='#fafafa'">
+                            <span style="color:#0f3460;font-weight:600;min-width:45px;">ID:</span>
+                            <span style="color:#333;">{{ member.bid }}</span>
+                        </div>
+                        
+                        <div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fafafa;
+                            border-radius:8px;transition:all 0.3s;" 
+                            onmouseover="this.style.background='#f0f0f0'" 
+                            onmouseout="this.style.background='#fafafa'">
+                            <span style="color:#0f3460;font-weight:600;min-width:70px;">Country:</span>
+                            <span style="color:#333;">{{ member.country }}</span>
+                        </div>
+                        
+                        <div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fafafa;
+                            border-radius:8px;transition:all 0.3s;" 
+                            onmouseover="this.style.background='#f0f0f0'" 
+                            onmouseout="this.style.background='#fafafa'">
+                            <span style="color:#0f3460;font-weight:600;min-width:65px;">Gender:</span>
+                            <span style="color:#333;">{{ member.gender }}</span>
+                        </div>
+                        
+                        <div style="display:flex;align-items:start;gap:10px;padding:8px;background:#fafafa;
+                            border-radius:8px;transition:all 0.3s;" 
+                            onmouseover="this.style.background='#f0f0f0'" 
+                            onmouseout="this.style.background='#fafafa'">
+                            <span style="color:#0f3460;font-weight:600;min-width:80px;">Class:</span>
+                            <span style="color:#333;flex:1;">{{ member.classification }}</span>
+                        </div>
+                    </div>
+
+                    {% if user.is_authenticated and user.is_staff %}
+                    <div style="display:flex;justify-content:center;gap:12px;margin-top:18px;">
+                        <a href="{% url 'member_edit' member.id %}" 
+                           style="padding:8px 18px;background:#0f3460;color:#fff;border-radius:8px;font-size:15px;font-weight:500;text-decoration:none;transition:background 0.2s;">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'member_delete' member.id %}" 
+                           style="padding:8px 18px;background:#e84545;color:#fff;border-radius:8px;font-size:15px;font-weight:500;text-decoration:none;transition:background 0.2s;">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div style="grid-column:1/-1;text-align:center;padding:60px 20px;background:#fff;
+                border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.08);">
+                <div style="font-size:64px;margin-bottom:20px;background:linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+                    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h4 style="color:#1a1a2e;font-size:18px;margin:0;">No members found</h4>
+                <p style="color:#666;margin:10px 0 0 0;">Try searching with different keywords</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+@media (max-width: 768px) {
+    form {
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+    }
+}
+</style>
+
+{% endblock %}
