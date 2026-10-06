@@ -1,10 +1,8 @@
 {% extends 'members/base.html' %}
 {% block content %}
-<h2>Add/Edit Member</h2>
+<h2>{% if member %}Edit Member{% else %}Add Member{% endif %}</h2>
 <form method="post">{% csrf_token %}
     {{ form.as_p }}
-    <label for="imgProfile">Profile Image URL:</label>
-    <input type="text" name="imgProfile" id="imgProfile" value="{{ form.imgProfile.value|default_if_none:'' }}" placeholder="Paste image URL here" />
     <button type="submit">Save</button>
 </form>
 <a href="{% url 'member_list' %}" class="button primary-action">Back to Members</a>

@@ -1,0 +1,62 @@
+{
+    "support@myp.com": {
+        "profile_picture": "\ud83d\udc36",
+        "position": "Support",
+        "employee_id": "1001",
+        "first_name": "John",
+        "last_name": "Support",
+        "birth_date": "01/01/1990",
+        "email": "support@myp.com",
+        "password": "pbkdf2_sha256$100000$8dd96b7221f2957d50514708dd7b1cd0$77fe5b8404ebdf57a906b1fa5b6048999eba39474112efa1d783ff91330da1b6"
+    },
+    "board@myp.com": {
+        "profile_picture": "\ud83d\udc36",
+        "position": "Board",
+        "employee_id": "2001",
+        "first_name": "Jane",
+        "last_name": "Board",
+        "birth_date": "02/02/1985",
+        "email": "board@myp.com",
+        "password": "pbkdf2_sha256$100000$36af4dc41f01bb0619115e57e0ec8fc1$59127728f003c086dd390c34f901e54c9b0d0f775276549bc32abbb26dfda40f"
+    },
+    "hr@myp.com": {
+        "profile_picture": "\ud83d\udc36",
+        "position": "Human Resources",
+        "employee_id": "3001",
+        "first_name": "Harry",
+        "last_name": "HR",
+        "birth_date": "03/03/1988",
+        "email": "hr@myp.com",
+        "password": "pbkdf2_sha256$100000$d010a8fbc5162e72aece83e4c71514cc$c58187c6208e2c32fd305b34ea3bfef840e3aa0424f5c743e4a40654cc837eb1"
+    },
+    "manager@myp.com": {
+        "profile_picture": "\ud83d\udc36",
+        "position": "Manager",
+        "employee_id": "4001",
+        "first_name": "Mary",
+        "last_name": "Manager",
+        "birth_date": "04/04/1987",
+        "email": "manager@myp.com",
+        "password": "pbkdf2_sha256$100000$f8130fb84dc224addaad8aceb6f0a417$10ea8dd6cc360bb17b39c36757e31a42891a34cd0db09568b3a02f2819635d5c"
+    },
+    "worker@myp.com": {
+        "profile_picture": "\ud83d\udc36",
+        "position": "Worker",
+        "employee_id": "5001",
+        "first_name": "Tom",
+        "last_name": "Worker",
+        "birth_date": "05/05/1995",
+        "email": "worker@myp.com",
+        "password": "pbkdf2_sha256$100000$2dc183b5594802a45c0dd803521c817d$5cc4e9a569f7f397ae3c29af4377e2863da61a24c508f9b9d8a2e9163b58ce4d"
+    },
+    "zapow@myp.com": {
+        "position": "Board",
+        "employee_id": "2002",
+        "first_name": "zaza",
+        "last_name": "pow",
+        "profile_picture": "\ud83e\udd84",
+        "birth_date": "15/10/2004",
+        "email": "zapow@myp.com",
+        "password": "pbkdf2_sha256$100000$722f674ef705b232c7e780986a1ffe90$f6f9db6426d232f040439d7a938d8727a0585e5832b2b1a208aab985e6451515"
+    }
+}

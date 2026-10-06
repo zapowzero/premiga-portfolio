@@ -1,6 +1,6 @@
 {% extends 'members/base.html' %}
 {% block content %}
-<h2>Add/Edit Event</h2>
+<h2>{% if event %}Edit Event{% else %}Add Event{% endif %}</h2>
 <form method="post">{% csrf_token %}
     <label for="id_name">Name:</label>
     {{ form.name }}<br>
@@ -20,8 +20,9 @@
     <label for="id_sport">Sport:</label>
     {{ form.sport }}<br>  
     
-    <label for="id_players">Add Players:</label>
-    {{ form.players }}<br>  
+    <label for="id_players">Players:</label>
+    {{ form.players }}
+    <small style="display:block;color:#666;margin-bottom:12px;">Hold Ctrl (Cmd on Mac) to select several players or to deselect one.</small>
     
     <label for="id_description">Description:</label>
     {{ form.description }}<br>

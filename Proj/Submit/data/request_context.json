@@ -1,0 +1,16 @@
+[
+    {
+        "id": "2216423f1b6f4c7e8ec71461b16de564",
+        "from_id": "3001",
+        "from_name": "Harry HR",
+        "to_id": "4001",
+        "to_name": "Mary Manager",
+        "cc_id": "2001",
+        "cc_name": "Jane Board",
+        "header": "request",
+        "detail": "new laptop",
+        "attachment": null,
+        "status": "Pending",
+        "date_sent": "2026-10-05 17:49:08"
+    }
+]

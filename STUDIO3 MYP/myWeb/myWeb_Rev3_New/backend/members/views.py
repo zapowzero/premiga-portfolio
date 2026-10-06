@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django import forms
 from .models import Member, Event
 from datetime import date
@@ -9,59 +10,48 @@ from datetime import date
 # Member CRUD + Search
 # ------------------------------
 def member_list(request):
-    members = Member.objects.all()
-    return render(request, 'members/member_list.html', {'members': members})
-
-from django.db.models import Q
+    members = Member.objects.order_by('bid', 'id')
+    page_obj = Paginator(members, 25).get_page(request.GET.get('page'))
+    return render(request, 'members/member_list.html', {
+        'members': page_obj,
+        'page_obj': page_obj,
+        'total': members.count(),
+    })
 
 def member_search(request):
     query = request.GET.get('q', '').strip()
     search_type = request.GET.get('type', 'name')
-    results = []
-    seen = set()
+    results = Member.objects.none()
 
     if query:
-        q = query.strip()
-        
         if search_type == 'id':
-            if q.isdigit():
-                results = Member.objects.filter(bid__exact=int(q))
-            else:
-                results = []
+            results = Member.objects.filter(bid=int(query)) if query.isdigit() else Member.objects.none()
 
         elif search_type == 'name':
-            results = Member.objects.filter(
-                Q(firstName__iexact=q) | Q(lastName__iexact=q)
-                )
+            # Every word must appear in the first or last name, so "chai", "sok"
+            # and "chaiya sok" all find Chaiya SOK.
+            results = Member.objects.all()
+            for word in query.split():
+                results = results.filter(Q(firstName__icontains=word) | Q(lastName__icontains=word))
 
         elif search_type == 'country':
-            results = Member.objects.filter(country__icontains=q)
+            results = Member.objects.filter(country__icontains=query)
 
         elif search_type == 'classification':
-            results = Member.objects.filter(classification__icontains=q)
+            results = Member.objects.filter(classification__icontains=query)
 
         elif search_type == 'gender':
-            q_lower = q.lower().strip()
-            results = Member.objects.filter(
-                Q(gender__iexact=q_lower) |
-                Q(gender__istartswith=f"All {q_lower.capitalize()}")
-            )
+            aliases = {'male': 'Men', 'man': 'Men', 'men': 'Men',
+                       'female': 'Women', 'woman': 'Women', 'women': 'Women'}
+            results = Member.objects.filter(gender__iexact=aliases.get(query.lower(), query))
 
-        # Remove duplicates safely
-        unique_results = []
-        for m in results:
-            key = (m.bid or m.id, m.firstName or '', m.lastName or '')
-            if key not in seen:
-                unique_results.append(m)
-                seen.add(key)
-        results = unique_results
+        results = results.order_by('bid', 'id')
 
     return render(request, 'members/search.html', {
-        'results': results or [],
+        'results': results,
         'query': query,
         'search_type': search_type
     })
-
 
 
 # ------------------------------
@@ -88,21 +78,40 @@ class MemberForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Last Name'
             }),
-            'gender': forms.Select(
-                choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')],
-                attrs={'class': 'form-select'}
-            ),
+            'gender': forms.Select(attrs={'class': 'form-select'}),
             'dateOfBirth': forms.DateInput(
                 attrs={
                     'class': 'form-control',
                     'type': 'date',
                     'min': '1900-01-01',
-                    'max': date.today().strftime('%Y-%m-%d'),}
+}
             ),
             'classification': forms.TextInput(attrs={
                 'class': 'form-control',
+                'placeholder': 'e.g. T46',
+            }),
+            'imgProfile': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Paste image URL here',
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'name@example.com',
             }),
         }
+        labels = {'bid': 'Member ID', 'firstName': 'First name', 'lastName': 'Last name',
+                  'dateOfBirth': 'Date of birth', 'imgProfile': 'Profile image URL'}
+
+    # Same values as the athlete data in the CSV ("Men" / "Women")
+    GENDER_CHOICES = [('', '---------'), ('Men', 'Men'), ('Women', 'Women')]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        choices = list(self.GENDER_CHOICES)
+        current = getattr(self.instance, 'gender', None)
+        if current and current not in dict(choices):
+            choices.append((current, current))  # never silently change an existing value
+        self.fields['gender'].widget.choices = choices
 
 @login_required
 def member_add(request):
@@ -113,6 +122,7 @@ def member_add(request):
             return redirect('member_list')
     else:
         form = MemberForm()
+    form.fields['dateOfBirth'].widget.attrs['max'] = date.today().isoformat()
     return render(request, 'members/member_form.html', {'form': form})
 
 @login_required
@@ -125,6 +135,7 @@ def member_edit(request, pk):
             return redirect('member_list')
     else:
         form = MemberForm(instance=member)
+    form.fields['dateOfBirth'].widget.attrs['max'] = date.today().isoformat()
     return render(request, 'members/member_form.html', {'form': form, 'member': member})
 
 @login_required
@@ -152,7 +163,7 @@ class EventForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Sport name'})
     )
     players = forms.ModelMultipleChoiceField(
-        queryset=Member.objects.all(),
+        queryset=Member.objects.order_by('firstName', 'lastName'),
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'form-select'})
     )
@@ -169,47 +180,31 @@ class EventForm(forms.ModelForm):
 
 
 def event_list(request):
-    events = Event.objects.all()
+    events = Event.objects.order_by('date', 'time_start')
     return render(request, 'members/event_list.html', {'events': events})
 
 @login_required
 def event_add(request):
-    members = Member.objects.all()
     if request.method == 'POST':
         form = EventForm(request.POST)
         if form.is_valid():
-            event = form.save(commit=False)
-            # แมพค่าจาก POST ไปที่ฟิลด์ในโมเดล
-            event.time_start = request.POST.get('time_start') if request.POST.get('time_start') else None
-            event.time_end = request.POST.get('time_end') if request.POST.get('time_end') else None
-            event.sport = request.POST.get('sport') if request.POST.get('sport') else None
-            event.save()
-            if form.cleaned_data.get('players'):
-                event.players.set(form.cleaned_data['players'])
+            form.save()  # also saves players, so removing every player works too
             return redirect('event_list')
     else:
         form = EventForm()
-    return render(request, 'members/event_form.html', {'form': form, 'members': members})
+    return render(request, 'members/event_form.html', {'form': form})
 
 @login_required
 def event_edit(request, pk):
     event = get_object_or_404(Event, pk=pk)
-    members = Member.objects.all()
     if request.method == 'POST':
         form = EventForm(request.POST, instance=event)
         if form.is_valid():
-            event = form.save(commit=False)
-            # แมพค่าจาก POST ไปที่ฟิตในโมเดล
-            event.time_start = request.POST.get('time_start') if request.POST.get('time_start') else None
-            event.time_end = request.POST.get('time_end') if request.POST.get('time_end') else None
-            event.sport = request.POST.get('sport') if request.POST.get('sport') else None
-            event.save()
-            if form.cleaned_data.get('players'):
-                event.players.set(form.cleaned_data['players'])
+            form.save()  # also saves players, so removing every player works too
             return redirect('event_list')
     else:
         form = EventForm(instance=event)
-    return render(request, 'members/event_form.html', {'form': form, 'members': members, 'event': event})
+    return render(request, 'members/event_form.html', {'form': form, 'event': event})
 
 
 def event_detail(request, pk):
@@ -231,5 +226,7 @@ def event_delete(request, pk):
         event.delete()
         return redirect('event_list')
     return render(request, 'members/event_confirm_delete.html', {'event': event})
+
+
 def faq_view(request):
     return render(request, 'members/faq_page.html')

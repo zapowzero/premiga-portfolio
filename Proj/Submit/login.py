@@ -1,11 +1,80 @@
+# ต้องติดตั้งก่อนรัน:  pip install Pillow tkcalendar
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 from tkinter import *
 import re
 import json
+import os
+import hashlib
+import hmac
+from pathlib import Path
 from PIL import Image, ImageTk
 from tkcalendar import Calendar
+
+# ---------------------------------------------------------------------------
+# Paths: ทุกไฟล์อ้างอิงจากโฟลเดอร์ที่ไฟล์นี้อยู่ ย้ายไปเครื่องไหนก็รันได้
+# ---------------------------------------------------------------------------
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+
+_ITERATIONS = 100_000
+
+
+def hash_password(password):
+    salt = os.urandom(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, _ITERATIONS)
+    return f"pbkdf2_sha256${_ITERATIONS}${salt.hex()}${digest.hex()}"
+
+
+def verify_password(password, stored):
+    try:
+        _, iterations, salt_hex, digest_hex = stored.split("$")
+    except (AttributeError, ValueError):
+        return False
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt_hex), int(iterations))
+    return hmac.compare_digest(digest.hex(), digest_hex)
+
+
+# บัญชีทดลอง (สร้างอัตโนมัติตอนรันครั้งแรก รหัสผ่านถูก hash ก่อนบันทึก)
+DEMO_USERS = [
+    ("Support", "1001", "John", "Support", "01/01/1990", "support", "Support123"),
+    ("Board", "2001", "Jane", "Board", "02/02/1985", "board", "Board123"),
+    ("Human Resources", "3001", "Harry", "HR", "03/03/1988", "hr", "Hr123456"),
+    ("Manager", "4001", "Mary", "Manager", "04/04/1987", "manager", "Manager123"),
+    ("Worker", "5001", "Tom", "Worker", "05/05/1995", "worker", "Worker123"),
+]
+
+
+def _create_demo_users(path):
+    users = {}
+    for position, emp_id, first, last, birth, name, password in DEMO_USERS:
+        email = f"{name}@myp.com"
+        users[email] = {
+            "profile_picture": "\U0001F436",
+            "position": position,
+            "employee_id": emp_id,
+            "first_name": first,
+            "last_name": last,
+            "birth_date": birth,
+            "email": email,
+            "password": hash_password(password),
+        }
+    with open(path, "w") as file:
+        json.dump(users, file, indent=4)
+
+
+def data_file(name):
+    """คืน path ของไฟล์ข้อมูลในโฟลเดอร์ data/ (สร้างให้อัตโนมัติถ้ายังไม่มี)"""
+    DATA_DIR.mkdir(exist_ok=True)
+    path = DATA_DIR / name
+    if name == "users.json" and not path.exists():
+        _create_demo_users(path)
+    return str(path)
+
+
+def asset_file(name):
+    return str(BASE_DIR / name)
 
 
 class EmployeeSystem:
@@ -29,22 +98,14 @@ class EmployeeSystem:
         self.setup_login_frame()
 
     def set_background_image(self):
-        # Load the image
-        image_path = r"D:\Class\Interact_Prog\Proj\CMS.webp"
+        # Load the image (ถ้าไม่มีไฟล์รูป ก็ใช้พื้นสีแทน ไม่ให้โปรแกรมพัง)
+        image_path = asset_file('CMS.webp')
+        if not os.path.exists(image_path):
+            self.root.configure(bg="#FF8C00")
+            return
         bg_image = Image.open(image_path)
         bg_image = bg_image.resize((1000, 1000), Image.Resampling.LANCZOS)  # Resize to fit the window
-        self.bg_photo = ImageTk.PhotoImage(bg_image)
-
-        # Create a label to display the image
-        bg_label = tk.Label(self.root, image=self.bg_photo)
-        bg_label.place(x=0, y=0, relwidth=1, relheight=1)  # Cover the entire window
-
-    def setup_login_frame(self):
-        # Load the image
-        image_path = r"D:\Class\Interact_Prog\Proj\CMS.webp"
-        bg_image = Image.open(image_path)
-        bg_image = bg_image.resize((1000, 1000), Image.Resampling.LANCZOS)  # Resize to fit the window
-        self.bg_photo = ImageTk.PhotoImage(bg_image)
+        self.bg_photo = ImageTk.PhotoImage(bg_image, master=self.root)
 
         # Create a label to display the image
         bg_label = tk.Label(self.root, image=self.bg_photo)
@@ -144,10 +205,10 @@ class EmployeeSystem:
         name_label.place(x=100, y=220)
         self.first_name_entry = ttk.Entry(self.register_frame, width=15, font=("Poppins", 12))
         self.first_name_entry.place(x=100, y=250)
-        self.first_name_entry.insert(0, "First Name")
+        self.add_placeholder(self.first_name_entry, "First Name")
         self.last_name_entry = ttk.Entry(self.register_frame, width=15, font=("Poppins", 12))
         self.last_name_entry.place(x=250, y=250)
-        self.last_name_entry.insert(0, "Last Name")
+        self.add_placeholder(self.last_name_entry, "Last Name")
 
     # Bind Enter key to validate first and last name
         self.first_name_entry.bind("<Return>", lambda _: self.validate_step("first_name"))
@@ -212,6 +273,31 @@ class EmployeeSystem:
         back_label.place(x=160, y=680)  # Adjusted y-coordinate
         back_label.bind("<Button-1>", lambda _: self.show_login_frame())
 
+    def add_placeholder(self, entry, text):
+        """Show grey hint text that disappears when the user clicks into the field."""
+        entry.placeholder = text
+
+        def show_hint(_=None):
+            if not entry.get():
+                entry.insert(0, text)
+                entry.config(foreground="grey")
+
+        def clear_hint(_=None):
+            if entry.get() == text and str(entry.cget("foreground")) == "grey":
+                entry.delete(0, tk.END)
+                entry.config(foreground="black")
+
+        entry.bind("<FocusIn>", clear_hint, add="+")
+        entry.bind("<FocusOut>", show_hint, add="+")
+        show_hint()
+
+    def real_value(self, entry):
+        """Entry text with the placeholder treated as empty."""
+        value = entry.get().strip()
+        if value == getattr(entry, "placeholder", None) and str(entry.cget("foreground")) == "grey":
+            return ""
+        return value
+
     def show_register_frame(self):
         self.login_frame.place_forget()
         self.setup_register_frame()
@@ -245,13 +331,17 @@ class EmployeeSystem:
 
     def load_users(self):
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'r') as file:
+            with open(data_file('users.json'), 'r') as file:
                 return json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             return {}
 
     def validate_registration(self):
-        if not self.first_name_entry.get() or not self.last_name_entry.get():
+        if not self.position_var.get():
+            messagebox.showerror("Error", "Please select a position")
+            return False
+
+        if not self.real_value(self.first_name_entry) or not self.real_value(self.last_name_entry):
             messagebox.showerror("Error", "Please enter both first and last name")
             return False
 
@@ -299,12 +389,12 @@ class EmployeeSystem:
         user_data = {
             "position": self.position_var.get(),
             "employee_id": self.employee_id_entry.get(),
-            "first_name": self.first_name_entry.get(),
-            "last_name": self.last_name_entry.get(),
+            "first_name": self.real_value(self.first_name_entry),
+            "last_name": self.real_value(self.last_name_entry),
             "profile_picture": self.profile_var.get(),  # Save the selected emoji
-            "birthday": self.birthday,  # Use the selected birthday
+            "birth_date": datetime.strptime(self.birthday, "%Y-%m-%d").strftime("%d/%m/%Y"),
             "email": f"{self.email_entry.get()}@myp.com",
-            "password": self.password_entry.get()
+            "password": hash_password(self.password_entry.get())
         }
 
         try:
@@ -318,7 +408,7 @@ class EmployeeSystem:
             users[email] = user_data
             
             # Save the updated users to the file
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'w') as file:
+            with open(data_file('users.json'), 'w') as file:
                 json.dump(users, file, indent=4)
             
             # Reload the users from the file to ensure the latest data is available
@@ -346,8 +436,9 @@ class EmployeeSystem:
             user = users.get(input_value)
 
         # Validate the user and password
-        if user and user.get("password") == password:
-            self.show_status_popup("Login Success", f"Welcome {user.get('first_name', 'User')}!", "green")
+        if user and verify_password(password, user.get("password")):
+            popup = self.show_status_popup("Login Success", f"Welcome {user.get('first_name', 'User')}!", "green")
+            self.root.wait_window(popup)  # wait until the user presses OK
             self.root.destroy()  # Close login window
             self.open_main_page(user)  # Open main page
         else:
@@ -361,7 +452,6 @@ class EmployeeSystem:
 
     
     # Status Popup
-    # Status Popup
     def show_status_popup(self, title, message, color):
         popup = tk.Toplevel(self.root)
         popup.title(title)
@@ -369,7 +459,7 @@ class EmployeeSystem:
         popup.configure(bg="#FFFFFF")  # พื้นหลังสีขาว
 
     # Title Label
-        tk.Label(popup, text=title, font=("Poppins", 14, "bold"), bg="#FFFFFF", fg="#FF0000").pack(pady=25)
+        tk.Label(popup, text=title, font=("Poppins", 14, "bold"), bg="#FFFFFF", fg=color).pack(pady=25)
 
     # Date & Time Label
         tk.Label(popup, text=f"Date & Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
@@ -384,6 +474,11 @@ class EmployeeSystem:
                           activebackground="#333333", activeforeground="white", 
                           bd=0, relief="flat", width=10)
         ok_button.pack(pady=15)
+        popup.bind("<Return>", lambda _: popup.destroy())
+        popup.transient(self.root)
+        popup.grab_set()
+        ok_button.focus_set()
+        return popup
 
 
     def update_progress(self, value):
@@ -420,10 +515,10 @@ class EmployeeSystem:
         if step == "position" and self.position_var.get() and step not in self.completed_steps:
             self.update_progress(progress_map["position"])
             self.completed_steps.add(step)
-        elif step == "first_name" and self.first_name_entry.get().strip() and step not in self.completed_steps:
+        elif step == "first_name" and self.real_value(self.first_name_entry) and step not in self.completed_steps:
             self.update_progress(progress_map["first_name"])
             self.completed_steps.add(step)
-        elif step == "last_name" and self.last_name_entry.get().strip() and step not in self.completed_steps:
+        elif step == "last_name" and self.real_value(self.last_name_entry) and step not in self.completed_steps:
             self.update_progress(progress_map["last_name"])
             self.completed_steps.add(step)
         elif step == "profile_picture" and self.profile_var.get() and step not in self.completed_steps:
@@ -447,7 +542,11 @@ class EmployeeSystem:
         popup.configure(bg="white")
 
         min_date = datetime(1955, 1, 1)
-        max_date = datetime(2002, 12, 31)
+        today = datetime.now()
+        try:
+            max_date = today.replace(year=today.year - 18)  # must be at least 18 years old
+        except ValueError:  # 29 Feb on a non-leap year
+            max_date = today.replace(year=today.year - 18, day=28)
 
         calendar = Calendar(popup, date_pattern="yyyy-mm-dd", mindate=min_date, maxdate=max_date
                             ,font=("Poppins", 10),

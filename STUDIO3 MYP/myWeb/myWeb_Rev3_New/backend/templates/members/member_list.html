@@ -135,7 +135,7 @@
     <div class="list-header">
         <div style="display:flex; align-items:center; gap:12px;">
             <h2>Member List</h2>
-            <span class="stat-tag">Total {{ members|length }}</span>
+            <span class="stat-tag">Total {{ total }}</span>
         </div>
 
         {% if user.is_authenticated %}
@@ -188,5 +188,19 @@
             </tbody>
         </table>
     </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination" style="display:flex;justify-content:center;align-items:center;gap:12px;margin:24px 0;">
+        {% if page_obj.has_previous %}
+            <a href="?page=1" class="btn-outline">&laquo; First</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn-outline">&lsaquo; Prev</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn-outline">Next &rsaquo;</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn-outline">Last &raquo;</a>
+        {% endif %}
+    </nav>
+    {% endif %}
 </div>
 {% endblock %}

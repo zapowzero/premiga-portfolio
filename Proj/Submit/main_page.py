@@ -3,9 +3,12 @@ from tkinter import messagebox, Label, Button, Text, ttk, Menu
 import json
 import tkinter.filedialog as filedialog
 import random
+import os
+import shutil
+import uuid
 from datetime import datetime  # Import datetime for date handling
 
-from login import EmployeeSystem
+from login import EmployeeSystem, data_file
 
 class MainPage(tk.Tk):
     def __init__(self, user_data):
@@ -105,7 +108,7 @@ class MainPage(tk.Tk):
     def load_user_data(self):
         """Load user data from the JSON file."""
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'r') as file:
+            with open(data_file('users.json'), 'r') as file:
                 users = json.load(file)
                 email = self.user_data.get("email", "")
                 self.user_data = users.get(email, self.user_data)  # Update user_data with JSON data
@@ -202,7 +205,7 @@ class MainPage(tk.Tk):
 
         # Load users from the JSON file
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'r') as file:
+            with open(data_file('users.json'), 'r') as file:
                 users = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             messagebox.showerror("Error", "Unable to load employee data.")
@@ -225,10 +228,12 @@ class MainPage(tk.Tk):
 
         # Display employee information
         self.editable_entries = {}  # Store editable entries for saving
-        allowed_keys = ["position", "first name", "email"]  # Keys visible to non-Support/HR users
+        allowed_keys = ["position", "first_name", "last_name", "email"]  # Keys visible to non-Support/HR users
         is_restricted = self.user_data.get("position") not in ["Support", "Human Resources"]
 
         for key, value in employee.items():
+            if key == "password":
+                continue  # never display the password hash
             if is_restricted and key not in allowed_keys:
                 continue  # Skip keys not allowed for restricted users
 
@@ -385,31 +390,18 @@ class MainPage(tk.Tk):
 
             # Show action buttons only for the approver, not for CC recipients
             if request["to_id"] == logged_in_employee_id:
-                # Approve Button
-                approve_button = tk.Button(row_frame, text="Approve", font=("Arial", 10), bg="green", fg="white",
-                                            command=lambda req=request: self.handle_approval(req, "Approved", approve_button, deny_button, row_frame))
+                # Create both buttons first, then bind commands with this row's widgets
+                # as default arguments so each row controls its own buttons.
+                approve_button = tk.Button(row_frame, text="Approve", font=("Arial", 10), bg="green", fg="white")
                 approve_button.pack(side="left", padx=10)
 
-                # Deny Button
-                deny_button = tk.Button(row_frame, text="Deny", font=("Arial", 10), bg="red", fg="white",
-                                         command=lambda req=request: self.handle_approval(req, "Denied", approve_button, deny_button, row_frame))
+                deny_button = tk.Button(row_frame, text="Deny", font=("Arial", 10), bg="red", fg="white")
                 deny_button.pack(side="left", padx=10)
 
-    #def expand_fya_text(self):
-        #self.fya_label.config(text=self.fya_text)
-        #self.fya_label.config(height=4, wraplength=600)
-        #self.id_label.config(height=4)
-        #self.approve_frame.config(height=4)
-    
-    def accept_request(self):
-        messagebox.showinfo("Approval", "Request Accepted")
-    
-    def deny_request(self):
-        messagebox.showinfo("Approval", "Request Denied")
-
-    def send_approval_request(self):
-        messagebox.showinfo("Approval Request Sent", "Your request has been sent for approval.")
-        self.right_frame.pack_forget() # Hide panel after clicking OK
+                approve_button.config(command=lambda req=request, a=approve_button, d=deny_button, r=row_frame:
+                                      self.handle_approval(req, "Approved", a, d, r))
+                deny_button.config(command=lambda req=request, a=approve_button, d=deny_button, r=row_frame:
+                                   self.handle_approval(req, "Denied", a, d, r))
 
     def send_request(self):
         """Handle sending a request."""
@@ -433,13 +425,14 @@ class MainPage(tk.Tk):
 
         # Load existing requests from request_context.json
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\request_context.json', 'r') as file:
+            with open(data_file('request_context.json'), 'r') as file:
                 requests = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             requests = []
 
         # Create a new request
         new_request = {
+            "id": uuid.uuid4().hex,  # unique ID so approve/deny always updates the right request
             "from_id": self.user_data.get("employee_id"),
             "from_name": f"{self.user_data.get('first_name')} {self.user_data.get('last_name')}",
             "to_id": to_id,
@@ -458,7 +451,7 @@ class MainPage(tk.Tk):
 
         # Save the updated requests to request_context.json
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\request_context.json', 'w') as file:
+            with open(data_file('request_context.json'), 'w') as file:
                 json.dump(requests, file, indent=4)
             messagebox.showinfo("Success", "Request sent successfully!")
 
@@ -477,7 +470,7 @@ class MainPage(tk.Tk):
     def load_requests(self):
         """Load requests from the request_context.json file."""
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\request_context.json', 'r') as file:
+            with open(data_file('request_context.json'), 'r') as file:
                 requests = json.load(file)
                 return requests
         except (FileNotFoundError, json.JSONDecodeError):
@@ -529,43 +522,26 @@ class MainPage(tk.Tk):
         close_button.pack(pady=10)
 
     def download_attachment(self, file_path):
-        """Download the attached file."""
+        """Copy the attached file to a location the user chooses."""
+        if not file_path or not os.path.exists(file_path):
+            messagebox.showerror("Error", "The attached file could not be found on this computer.")
+            return
+        save_path = filedialog.asksaveasfilename(initialfile=os.path.basename(file_path), title="Save File")
+        if not save_path:
+            return  # user cancelled
         try:
-            filedialog.asksaveasfilename(initialfile=file_path.split("/")[-1], title="Save File")
-            messagebox.showinfo("Download", "Attachment downloaded successfully!")
+            shutil.copy(file_path, save_path)
+            messagebox.showinfo("Download", f"Attachment saved to:\n{save_path}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to download attachment: {str(e)}")
 
-    def approve_request(self, request):
-        """Handle approving or viewing a request."""
-        # Create a new window for approval actions
-        approval_window = tk.Toplevel(self)
-        approval_window.title("Approve Request")
-        approval_window.geometry("400x300")
-        approval_window.config(bg="#F8F8F8")
-
-        # Display request details
-        tk.Label(approval_window, text="Approve Request", font=("Arial", 16, "bold"), bg="#F8F8F8").pack(pady=10)
-        tk.Label(approval_window, text=f"From: {request['from_id']} ({request['from_name']})", font=("Arial", 12), bg="#F8F8F8").pack(anchor="center", padx=10, pady=5)
-        tk.Label(approval_window, text=f"Header: {request['header']}", font=("Arial", 12), bg="#F8F8F8").pack(anchor="center", padx=10, pady=5)
-        tk.Label(approval_window, text="Detail:", font=("Arial", 12, "bold"), bg="#F8F8F8").pack(anchor="center", padx=10, pady=5)
-
-        detail_text = tk.Text(approval_window, font=("Arial", 12), height=5, width=40, wrap="word")
-        detail_text.insert("1.0", request["detail"])
-        detail_text.config(state="disabled")  # Make the text box read-only
-        detail_text.pack(padx=10, pady=5)
-
-        # Approve and Deny buttons
-        button_frame = tk.Frame(approval_window, bg="#F8F8F8")
-        button_frame.pack(pady=10)
-
-        approve_button = tk.Button(button_frame, text="Approve", font=("Arial", 12, "bold"), bg="green", fg="white",
-                                    command=lambda: self.handle_approval(request, "Approved", approve_button, deny_button))
-        approve_button.pack(side="left", padx=10)
-
-        deny_button = tk.Button(button_frame, text="Deny", font=("Arial", 12, "bold"), bg="red", fg="white",
-                                 command=lambda: self.handle_approval(request, "Denied", approval_window, approve_button, deny_button))
-        deny_button.pack(side="left", padx=10)
+    @staticmethod
+    def same_request(a, b):
+        """Match by unique id; older requests without an id fall back to sender + header + time sent."""
+        if a.get("id") and b.get("id"):
+            return a["id"] == b["id"]
+        keys = ("from_id", "header", "date_sent")
+        return all(a.get(k) == b.get(k) for k in keys)
 
     def handle_approval(self, request, status, approve_button, deny_button, row_frame):
         """Update the request status, save it, and handle UI updates."""
@@ -574,20 +550,20 @@ class MainPage(tk.Tk):
 
         # Load existing requests
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\request_context.json', 'r') as file:
+            with open(data_file('request_context.json'), 'r') as file:
                 requests = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             requests = []
 
         # Update the specific request in the list
         for req in requests:
-            if req["from_id"] == request["from_id"] and req["header"] == request["header"]:
+            if self.same_request(req, request):
                 req["status"] = status
                 break
 
         # Save the updated requests back to the file
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\request_context.json', 'w') as file:
+            with open(data_file('request_context.json'), 'w') as file:
                 json.dump(requests, file, indent=4)
             messagebox.showinfo("Success", f"Request has been {status.lower()}!")
         except Exception as e:
@@ -600,39 +576,6 @@ class MainPage(tk.Tk):
         # If the request is approved or denied, remove it from the approver's view
         if status in ["Approved", "Denied"]:
             row_frame.pack_forget()
-
-        # Refresh the Approve section
-        self.show_approve()
-
-    def deny_request(self, request):
-        """Handle denying a request."""
-        # Confirm the denial action
-        if not messagebox.askyesno("Deny Request", "Are you sure you want to deny this request?"):
-            return
-
-        # Update the request status to "Denied"
-        request["status"] = "Denied"
-
-        # Load existing requests
-        try:
-            with open(r'D:\Class\Interact_Prog\Proj\request_context.json', 'r') as file:
-                requests = json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError):
-            requests = []
-
-        # Update the specific request in the list
-        for req in requests:
-            if req["from_id"] == request["from_id"] and req["header"] == request["header"]:
-                req["status"] = "Denied"
-                break
-
-        # Save the updated requests back to the file
-        try:
-            with open(r'D:\Class\Interact_Prog\Proj\request_context.json', 'w') as file:
-                json.dump(requests, file, indent=4)
-            messagebox.showinfo("Success", "Request has been denied.")
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred while saving the request: {str(e)}")
 
         # Refresh the Approve section
         self.show_approve()
@@ -653,7 +596,7 @@ class MainPage(tk.Tk):
 
         # Load Problems
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\report_problem.json', 'r') as file:
+            with open(data_file('report_problem.json'), 'r') as file:
                 problems = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             problems = []
@@ -686,7 +629,7 @@ class MainPage(tk.Tk):
         """Mark a problem as finished and save it in report_problem.json."""
         try:
             # Load existing problems
-            with open(r'D:\Class\Interact_Prog\Proj\report_problem.json', 'r') as file:
+            with open(data_file('report_problem.json'), 'r') as file:
                 problems = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             problems = []
@@ -695,19 +638,19 @@ class MainPage(tk.Tk):
         problems = [p for p in problems if p != problem]
 
         # Save the updated list back to the file
-        with open(r'D:\Class\Interact_Prog\Proj\report_problem.json', 'w') as file:
+        with open(data_file('report_problem.json'), 'w') as file:
             json.dump(problems, file, indent=4)
 
         # Save the finished problem in a separate file
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\finished_problems.json', 'r') as file:
+            with open(data_file('finished_problems.json'), 'r') as file:
                 finished_problems = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             finished_problems = []
 
         finished_problems.append(problem)
 
-        with open(r'D:\Class\Interact_Prog\Proj\finished_problems.json', 'w') as file:
+        with open(data_file('finished_problems.json'), 'w') as file:
             json.dump(finished_problems, file, indent=4)
 
         messagebox.showinfo("Success", "Problem marked as finished.")
@@ -791,7 +734,7 @@ class MainPage(tk.Tk):
 
         # Load existing problems
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\report_problem.json', 'r') as file:
+            with open(data_file('report_problem.json'), 'r') as file:
                 problems = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             problems = []
@@ -808,7 +751,7 @@ class MainPage(tk.Tk):
         problems.append(new_problem)
 
         # Save the updated list
-        with open(r'D:\Class\Interact_Prog\Proj\report_problem.json', 'w') as file:
+        with open(data_file('report_problem.json'), 'w') as file:
             json.dump(problems, file, indent=4)
 
         messagebox.showinfo("Success", "Your report has been sent.")
@@ -823,7 +766,7 @@ class MainPage(tk.Tk):
     def get_employee_ids(self):
         """Retrieve all employee IDs from users.json."""
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'r') as file:
+            with open(data_file('users.json'), 'r') as file:
                 users = json.load(file)
                 return [user["employee_id"] for user in users.values()]
         except (FileNotFoundError, json.JSONDecodeError):
@@ -850,7 +793,7 @@ class MainPage(tk.Tk):
     def get_employee_name(self, employee_id):
         """Retrieve the name of an employee by their ID."""
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'r') as file:
+            with open(data_file('users.json'), 'r') as file:
                 users = json.load(file)
                 for user in users.values():
                     if user["employee_id"] == employee_id:
@@ -889,6 +832,8 @@ class MainPage(tk.Tk):
 
         # Display user details
         for key, value in self.user_data.items():
+            if key == "password":
+                continue  # never display the password hash
             row_frame = tk.Frame(profile_window, bg="#F8F8F8")
             row_frame.pack(anchor="w", padx=10, pady=5)
 
@@ -904,7 +849,7 @@ class MainPage(tk.Tk):
         """Save the edited employee data."""
         try:
             # Load the users from the JSON file
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'r') as file:
+            with open(data_file('users.json'), 'r') as file:
                 users = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             messagebox.showerror("Error", "Unable to load employee data.")
@@ -927,7 +872,7 @@ class MainPage(tk.Tk):
 
         # Save the updated data back to the JSON file
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'w') as file:
+            with open(data_file('users.json'), 'w') as file:
                 json.dump(users, file, indent=4)
             messagebox.showinfo("Success", "Employee data saved successfully.")
         except Exception as e:
@@ -965,12 +910,12 @@ class MainPage(tk.Tk):
 
         # Save the updated profile picture to users.json
         try:
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'r') as file:
+            with open(data_file('users.json'), 'r') as file:
                 users = json.load(file)
             email = self.user_data.get("email", "")
             if email in users:
                 users[email]["profile_picture"] = new_emoji
-            with open(r'D:\Class\Interact_Prog\Proj\users.json', 'w') as file:
+            with open(data_file('users.json'), 'w') as file:
                 json.dump(users, file, indent=4)
         except (FileNotFoundError, json.JSONDecodeError):
             messagebox.showerror("Error", "Unable to update profile picture.")
@@ -982,4 +927,3 @@ class MainPage(tk.Tk):
 if __name__ == "__main__":
     user_data = {}
     app = MainPage(user_data)
-

@@ -221,13 +221,6 @@
     </div>
     {% endif %}
 
-    {% if event.notes and user.is_authenticated %}
-    <h3 class="section-title">Internal Notes</h3>
-    <div class="notes-box">
-        <p>{{ event.notes|linebreaksbr }}</p>
-    </div>
-    {% endif %}
-
     <h3 class="section-title">Participating Players ({{ players|length }})</h3>
     {% if players %}
     <ul class="player-list">
