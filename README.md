@@ -31,7 +31,7 @@ Two questions answered from a large real-world dataset: *Where do accidents happ
 
 <img src="zapow%20dataviz/comparison%20of%20severe%20vs%20minor%20accidents%20by%20road%20feature.png" width="600" alt="Severe vs minor accidents by road feature">
 
-### Machine learning exercises 🤖
+### Machine learning exercises 
 Compared Naive Bayes, Decision Tree, Linear SVC and SGD classifiers, an MLP classifier, and linear regression models (MSE comparison).
 
 **Tech:** Python · scikit-learn · Google Colab  →  [`ML/`](ML/)
